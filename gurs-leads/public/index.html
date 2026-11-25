@@ -479,7 +479,7 @@ async function runTis(){
   $('#tisBtn').disabled = true; $('#tisPause').hidden = false;
   const rows = lastRows;
   const todo = rows.filter(r => !r.tis || r.tis.error);
-  const BATCH = 6, PAR = 2;
+  const BATCH = 9, PAR = 4;
   const batches = [];
   for (let i = 0; i < todo.length; i += BATCH) batches.push(todo.slice(i, i + BATCH));
   let failures = 0, lastRender = 0;

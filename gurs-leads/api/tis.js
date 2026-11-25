@@ -6,7 +6,8 @@ import { parseTis, hiddenFields, normAddr } from '../lib/tis-parse.js';
 
 const ORIGIN = 'https://itis.siol.net';
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36';
-const MAX_PER_CALL = 8;
+const MAX_PER_CALL = 10;
+const PARALLEL = 3;
 const STATE_TTL = 10 * 60 * 1000;
 
 let state = null; // { fields, cookie, at }
@@ -79,16 +80,21 @@ export default async function handler(req, res) {
   if (!list.length) return res.status(400).json({ error: 'Manjka seznam naslovov.' });
 
   const results = {};
-  // zaporedno, da TIS ne dobi navala
-  for (const a of list) {
-    const key = String(a.key ?? a.street);
-    try {
-      if (!a.street) throw new Error('Manjka ulica.');
-      results[key] = await lookup(a);
-    } catch (e) {
-      results[key] = { entries: [], approx: 0, morePages: false, error: String(e.message || e) };
+  await getState().catch(() => {});
+  // do 3 poizvedbe hkrati na klic
+  let i = 0;
+  await Promise.all(Array.from({ length: Math.min(PARALLEL, list.length) }, async () => {
+    while (i < list.length) {
+      const a = list[i++];
+      const key = String(a.key ?? a.street);
+      try {
+        if (!a.street) throw new Error('Manjka ulica.');
+        results[key] = await lookup(a);
+      } catch (e) {
+        results[key] = { entries: [], approx: 0, morePages: false, error: String(e.message || e) };
+      }
     }
-  }
+  }));
   res.setHeader('Cache-Control', 'no-store');
   return res.status(200).json({ results });
 }
