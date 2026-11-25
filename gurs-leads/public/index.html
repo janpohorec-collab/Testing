@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GURS Leads · naslovi + TIS kontakti</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#eef2f0; --panel:#fff; --ink:#15211d; --muted:#5b6b65; --line:#d6dfdb;
+    --brand:#1f3a33; --brand2:#2f6b5a; --soft:#e3efe9; --warn:#fff4e0; --warnInk:#8a5a00;
+    --ok:#e3f4e8; --okInk:#1d6b3a; --blue:#e5ecfa; --blueInk:#2c4a86; --red:#fbe7e7; --redInk:#8c2a2a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px}
+  .hero{background:var(--brand);color:#fff;border-radius:22px;padding:30px 34px}
+  .hero h1{margin:0;font-size:34px;letter-spacing:-1px;line-height:1.1}
+  .hero p{margin:8px 0 0;color:#cfe0d9}
+  .meta{margin-top:14px;display:flex;gap:10px;flex-wrap:wrap}
+  .pill{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:99px;padding:4px 12px;font-size:13px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px}
+  .cap{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--brand2);margin:0 0 10px}
+  label.f{display:block;font-weight:600;font-size:13px;margin:12px 0 5px}
+  input[type=text],select{width:100%;border:1px solid #b9c7c1;border-radius:11px;padding:10px 12px;font:inherit;background:#fff;color:var(--ink)}
+  input[type=text]:focus,select:focus{outline:2px solid var(--brand2);outline-offset:1px}
+  .row3{display:grid;grid-template-columns:1.3fr 1fr 1.2fr;gap:10px}
+  @media(max-width:600px){.row3{grid-template-columns:1fr}}
+  .obList{margin-top:8px;max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:12px}
+  .obItem{display:flex;justify-content:space-between;align-items:center;padding:7px 12px;cursor:pointer;border-bottom:1px solid #eef2f0;font-size:14px}
+  .obItem:hover{background:var(--soft)}
+  .obItem.sel{background:var(--soft);font-weight:600}
+  .obItem small{color:var(--muted)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;min-height:30px}
+  .chip{background:var(--brand2);color:#fff;border-radius:99px;padding:3px 6px 3px 12px;font-size:13px;display:flex;align-items:center;gap:6px}
+  .chip button{background:rgba(255,255,255,.2);border:0;color:#fff;border-radius:99px;width:20px;height:20px;cursor:pointer;line-height:1}
+  .muted{color:var(--muted);font-size:13px}
+  .cond{border:1px solid var(--line);border-radius:14px;padding:12px 14px 14px;margin-top:12px}
+  .cond.off{opacity:.55}
+  .cond h4{margin:0;font-size:14px;display:flex;gap:8px;align-items:center}
+  .btn{border:0;border-radius:12px;padding:12px 20px;font:inherit;font-weight:700;cursor:pointer}
+  .btn.p{background:var(--brand2);color:#fff}
+  .btn.s{background:var(--soft);color:var(--brand)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+  .bar{height:10px;background:#e4ebe8;border-radius:99px;overflow:hidden;margin-top:10px}
+  .bar>div{height:100%;width:0;background:linear-gradient(90deg,#2f6b5a,#58a88d);transition:width .2s}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+  @media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat{background:var(--soft);border-radius:14px;padding:12px 14px}
+  .stat b{display:block;font-size:24px;letter-spacing:-.5px}
+  .stat span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em;padding:8px;border-bottom:2px solid var(--line);position:sticky;top:0;background:#fff}
+  td{padding:8px;border-bottom:1px solid #eef2f0;vertical-align:top}
+  .tbl{max-height:560px;overflow:auto;margin-top:12px;border:1px solid var(--line);border-radius:12px}
+  .tag{display:inline-block;border-radius:7px;padding:1px 7px;margin:1px 3px 1px 0;font-size:12px;white-space:nowrap}
+  .s1{background:var(--ok);color:var(--okInk)} .s2{background:var(--blue);color:var(--blueInk)} .s3{background:var(--warn);color:var(--warnInk)} .s0{background:#eee;color:#555}
+  .hit{outline:2px solid #2f6b5a}
+  .msg{margin-top:12px;padding:12px 14px;border-radius:12px;font-size:14px}
+  .msg.err{background:var(--red);color:var(--redInk)}
+  .msg.info{background:var(--warn);color:var(--warnInk)}
+  .foot{margin-top:22px;color:var(--muted);font-size:12.5px}
+  .quick{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .quick button{border:1px solid var(--line);background:#fff;border-radius:99px;padding:4px 10px;font-size:12.5px;cursor:pointer}
+  .quick button:hover{background:var(--soft)}
+  .tis{border-top:1px solid var(--line);margin-top:18px;padding-top:12px}
+  .opts{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:14px}
+  .lead{display:block;margin:2px 0}
+  .lead.ban{color:#9a9a9a;text-decoration:line-through}
+  .lead small{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <h1>GURS Leads</h1>
+    <p>Naslovi iz GURS (OPT) po operaterju, tehnologiji in statusu, nato imena in telefoni iz TIS. En Excel, pripravljen za klicanje.</p>
+    <div class="meta">
+      <span class="pill" id="snapPill">Nalagam podatke …</span>
+      <span class="pill" id="addrPill">–</span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section class="card">
+      <p class="cap">1 · Občine</p>
+      <input type="text" id="obSearch" placeholder="Išči občino, npr. Maribor, Ptuj, Lendava …" autocomplete="off">
+      <div class="quick" id="quick"></div>
+      <div class="obList" id="obList"></div>
+      <div class="chips" id="chips"></div>
+      <div class="muted" id="selInfo">Izberi eno ali več občin.</div>
+    </section>
+
+    <section class="card">
+      <p class="cap">2 · Filtri na naslovu</p>
+
+      <div class="cond" id="c1">
+        <h4>Glavni pogoj (naslov MORA imeti)</h4>
+        <div class="row3">
+          <div><label class="f">Operater</label><select data-k="op"></select></div>
+          <div><label class="f">Tehnologija</label><select data-k="tech"></select></div>
+          <div><label class="f">Status</label><select data-k="st"></select></div>
+        </div>
+      </div>
+
+      <div class="cond off" id="c2">
+        <h4><input type="checkbox" id="c2on"> Isti naslov ima TUDI</h4>
+        <div class="muted">Npr. Telemach coax priključen + T-2 optika nepriključena = stranka, ki jo lahko prevzameš.</div>
+        <div class="row3">
+          <div><label class="f">Operater</label><select data-k="op"></select></div>
+          <div><label class="f">Tehnologija</label><select data-k="tech"></select></div>
+          <div><label class="f">Status</label><select data-k="st"></select></div>
+        </div>
+      </div>
+
+      <div class="cond off" id="c3">
+        <h4><input type="checkbox" id="c3on"> IZLOČI naslov, če ima</h4>
+        <div class="muted">Npr. T-2 · katerakoli · zgrajen in priključen = izpusti naslove, kjer je T-2 že aktiven.</div>
+        <div class="row3">
+          <div><label class="f">Operater</label><select data-k="op"></select></div>
+          <div><label class="f">Tehnologija</label><select data-k="tech"></select></div>
+          <div><label class="f">Status</label><select data-k="st"></select></div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn p" id="runBtn" disabled>Generiraj seznam</button>
+        <button class="btn s" id="resetBtn">Reset filtrov</button>
+      </div>
+    </section>
+  </div>
+
+  <section class="card" style="margin-top:18px">
+    <p class="cap">3 · Rezultat</p>
+    <div class="muted" id="status">Še nič zagnano.</div>
+    <div class="bar"><div id="prog"></div></div>
+    <div class="stats">
+      <div class="stat"><span>Pregledanih naslovov</span><b id="stAll">–</b></div>
+      <div class="stat"><span>Zadetkov</span><b id="stHit">–</b></div>
+      <div class="stat"><span>Ujemajočih točk</span><b id="stPts">–</b></div>
+      <div class="stat"><span>Trajanje</span><b id="stTime">–</b></div>
+    </div>
+    <div class="tis" id="tisBox">
+      <p class="cap" style="margin-top:6px">4 · TIS imena in telefoni</p>
+      <div class="opts">
+        <label><input type="checkbox" id="optBan" checked> Izloči številke s prepovedjo trženjskih klicev (ZEKom)</label>
+        <label><input type="checkbox" id="optFirm" checked> Vključi podjetja (s.p., d.o.o.) na naslovu</label>
+        <label><input type="checkbox" id="optNoPhone"> Vključi kontakte brez številke</label>
+      </div>
+      <div class="actions" style="margin-top:12px">
+        <button class="btn p" id="tisBtn" disabled>Poišči v TIS</button>
+        <button class="btn s" id="tisPause" hidden>Pavza</button>
+      </div>
+      <div class="muted" id="tisStatus" style="margin-top:8px">Najprej generiraj seznam naslovov.</div>
+      <div class="bar"><div id="tisProg"></div></div>
+      <div class="stats">
+        <div class="stat"><span>Preverjenih naslovov</span><b id="tsDone">–</b></div>
+        <div class="stat"><span>Naslovov s kontaktom</span><b id="tsAddr">–</b></div>
+        <div class="stat"><span>Leadov s telefonom</span><b id="tsLeads">–</b></div>
+        <div class="stat"><span>Izločenih (ne kliči)</span><b id="tsBan">–</b></div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn p" id="xlsxBtn" disabled>Prenesi Excel</button>
+      <button class="btn s" id="csvBtn" disabled>Prenesi CSV leadov</button>
+      <button class="btn s" id="copyBtn" disabled>Kopiraj naslove</button>
+    </div>
+    <div id="msg"></div>
+    <div class="tbl" id="tblWrap" hidden>
+      <table>
+        <thead><tr><th>#</th><th>Naslov</th><th>Občina</th><th>Ujemajoči priključki</th><th>TIS kontakti</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="muted" id="tblNote" style="margin-top:8px"></div>
+  </section>
+
+  <p class="foot">
+    Vir: Geodetska uprava RS, evidenca omrežnih priključnih točk (OPT). Status velja na nivoju naslova (hišne številke), ne posameznega stanovanja:
+    pri večstanovanjskih stavbah "nepriključen" pomeni, da je na naslovu vsaj ena taka točka. Naročljivost paketa vedno preveri v prodajnem sistemu.
+  </p>
+</div>
+
+<script>
+const REMOTE = 'https://gurs-vercel.vercel.app/data/';
+let BASE = REMOTE;
+
+const TECH = {'1':'Optika','2':'Koaksialni kabel (COAX)','3':'Bakrena parica','4':'Fiksni brezžični','5':'Drugo'};
+const TECH_SHORT = {'1':'optika','2':'coax','3':'baker','4':'brezžično','5':'drugo'};
+const STATUS = {'1':'Zgrajen in priključen','2':'Zgrajen in nepriključen','3':'Omogočen, nezgrajen'};
+const STATUS_SHORT = {'1':'priključen','2':'nepriključen','3':'nezgrajen'};
+const BIG = {t2:'T-2', telekom:'Telekom Slovenije', telemach:'Telemach', a1:'A1 Slovenija'};
+
+let catalog, operators, opName = {};
+let obcine = []; // [name, count]
+const selected = new Set();
+const shardCache = new Map();
+const groupCache = new Map();
+let lastRows = [], lastMeta = null;
+
+const $ = s => document.querySelector(s);
+const fmt = n => new Intl.NumberFormat('sl-SI').format(n);
+
+function normalize(v){
+  return (v.toLowerCase().replaceAll('ß','ss').normalize('NFKD').replace(/\p{M}/gu,'').match(/[\p{L}\p{N}]+/gu) ?? []).join(' ');
+}
+const hexFile = k => Array.from(new TextEncoder().encode(k), b => b.toString(16).padStart(2,'0')).join('') + '.bin';
+
+async function readJSON(path){
+  const r = await fetch(BASE + path);
+  if (!r.ok) throw new Error('Podatkov ni mogoče naložiti (' + path + ', ' + r.status + ').');
+  return r.json();
+}
+async function readGz(path){
+  const r = await fetch(BASE + path);
+  if (!r.ok) throw new Error('Podatkov ni mogoče naložiti (' + path + ', ' + r.status + ').');
+  return new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).json();
+}
+function shard(key){
+  if (!shardCache.has(key)) shardCache.set(key, readGz('search/' + hexFile(key)).catch(e => { shardCache.delete(key); throw e; }));
+  return shardCache.get(key);
+}
+function group(g){
+  if (!groupCache.has(g)) groupCache.set(g, readGz('connections/' + g + '.bin').catch(e => { groupCache.delete(g); throw e; }));
+  return groupCache.get(g);
+}
+
+// --- filters UI ---
+function opOptions(){
+  const sorted = Object.entries(operators).sort((a,b) => a[1][0].localeCompare(b[1][0],'sl'));
+  return `<option value="any">Vsi operaterji</option>
+    <optgroup label="Glavni">
+      <option value="g:t2">T-2</option><option value="g:telekom">Telekom Slovenije</option>
+      <option value="g:telemach">Telemach</option><option value="g:a1">A1 Slovenija</option>
+      <option value="g:rune">RUNE (Enia, Runetec, Runext)</option>
+      <option value="g:other">Ostali (ne T-2/Telekom/Telemach/A1)</option>
+    </optgroup>
+    <optgroup label="Posamezni upravljavci">${sorted.map(([id,[n]]) => `<option value="id:${id}">${esc(n)}</option>`).join('')}</optgroup>`;
+}
+const techOptions = () => `<option value="any">Vse tehnologije</option>` + Object.entries(TECH).map(([k,v]) => `<option value="${k}">${v}</option>`).join('');
+const stOptions = () => `<option value="any">Vsak status</option>` + Object.entries(STATUS).map(([k,v]) => `<option value="${k}">${v}</option>`).join('');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const DEFAULTS = {
+  c1: {op:'g:t2', tech:'1', st:'2'},
+  c2: {op:'g:telemach', tech:'2', st:'1'},
+  c3: {op:'g:t2', tech:'any', st:'1'},
+};
+function setCond(id, v){ for (const s of document.querySelectorAll('#'+id+' select')) s.value = v[s.dataset.k]; }
+function getCond(id){ const o = {}; for (const s of document.querySelectorAll('#'+id+' select')) o[s.dataset.k] = s.value; return o; }
+function condText(id){
+  const parts = [...document.querySelectorAll('#'+id+' select')].map(s => s.options[s.selectedIndex].text);
+  return parts.join(' · ');
+}
+
+function opMatcher(v){
+  if (v === 'any') return () => true;
+  if (v.startsWith('id:')) { const id = v.slice(3); return o => String(o) === id; }
+  const g = v.slice(2);
+  if (BIG[g]) return o => opName[o] === BIG[g];
+  if (g === 'rune') return o => /^RUNE/i.test(opName[o] || '');
+  if (g === 'other') { const big = new Set(Object.values(BIG)); return o => !big.has(opName[o]); }
+  return () => false;
+}
+function makeTest(c){
+  const om = opMatcher(c.op);
+  return ([o,t,s]) => om(o) && (c.tech === 'any' || String(t) === c.tech) && (c.st === 'any' || String(s) === c.st);
+}
+
+// --- občine UI ---
+function renderObList(){
+  const q = normalize($('#obSearch').value);
+  const list = obcine.filter(([n]) => !q || normalize(n).includes(q));
+  $('#obList').innerHTML = list.map(([n,c]) =>
+    `<div class="obItem ${selected.has(n)?'sel':''}" data-n="${esc(n)}"><span>${selected.has(n)?'✓ ':''}${esc(n)}</span><small>${fmt(c)} nasl.</small></div>`
+  ).join('') || '<div class="obItem"><span class="muted">Ni zadetkov.</span></div>';
+}
+function renderChips(){
+  $('#chips').innerHTML = [...selected].map(n => `<span class="chip">${esc(n)}<button data-n="${esc(n)}" title="Odstrani">×</button></span>`).join('');
+  const total = obcine.filter(([n]) => selected.has(n)).reduce((a,[,c]) => a + c, 0);
+  $('#selInfo').textContent = selected.size ? `${selected.size} občin · ${fmt(total)} naslovov za pregled` : 'Izberi eno ali več občin.';
+  $('#runBtn').disabled = !selected.size;
+}
+function toggleOb(n){ selected.has(n) ? selected.delete(n) : selected.add(n); renderObList(); renderChips(); }
+
+$('#obList').addEventListener('click', e => { const it = e.target.closest('.obItem[data-n]'); if (it) toggleOb(it.dataset.n); });
+$('#chips').addEventListener('click', e => { const b = e.target.closest('button[data-n]'); if (b) toggleOb(b.dataset.n); });
+$('#obSearch').addEventListener('input', renderObList);
+$('#obSearch').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { const first = $('#obList .obItem[data-n]'); if (first) { toggleOb(first.dataset.n); $('#obSearch').select(); } }
+});
+
+const QUICK = {
+  'Pomurje': ['Apače','Beltinci','Cankova','Črenšovci','Dobrovnik','Gornja Radgona','Gornji Petrovci','Grad','Hodoš','Kobilje','Križevci','Kuzma','Lendava','Ljutomer','Moravske Toplice','Murska Sobota','Odranci','Puconci','Radenci','Razkrižje','Rogašovci','Sveti Jurij ob Ščavnici','Šalovci','Tišina','Turnišče','Velika Polana','Veržej'],
+  'MB + okolica': ['Maribor','Hoče-Slivnica','Miklavž na Dravskem polju','Duplek','Pesnica','Kungota','Šentilj','Rače-Fram','Starše','Ruše','Selnica ob Dravi'],
+  'Ljubljana': ['Ljubljana'],
+  'Počisti': []
+};
+$('#quick').innerHTML = Object.keys(QUICK).map(k => `<button data-q="${k}">${k}</button>`).join('');
+$('#quick').addEventListener('click', e => {
+  const k = e.target.dataset.q; if (!k) return;
+  if (k === 'Počisti') selected.clear();
+  else for (const n of QUICK[k]) if (obcine.some(([x]) => x === n)) selected.add(n);
+  renderObList(); renderChips();
+});
+
+for (const id of ['c2','c3']) {
+  $('#'+id+'on').addEventListener('change', e => $('#'+id).classList.toggle('off', !e.target.checked));
+}
+$('#resetBtn').addEventListener('click', () => {
+  for (const id of ['c1','c2','c3']) setCond(id, DEFAULTS[id]);
+  $('#c2on').checked = false; $('#c3on').checked = false;
+  $('#c2').classList.add('off'); $('#c3').classList.add('off');
+});
+
+// --- run ---
+function shardKeyFor(obcina){
+  const toks = normalize(obcina).split(' ').filter(t => t.length >= 2).map(t => t.slice(0,2)).filter(k => Object.hasOwn(catalog.sizes, k));
+  if (!toks.length) return null;
+  return toks.reduce((b,c) => catalog.sizes[c] < catalog.sizes[b] ? c : b);
+}
+function splitAddr(naslov){
+  const i = naslov.lastIndexOf(', ');
+  const ulica = i > -1 ? naslov.slice(0,i) : naslov;
+  const posta = i > -1 ? naslov.slice(i+2) : '';
+  const m = posta.match(/^(\d{4})\s+(.*)$/);
+  return { ulica, postna: m ? m[1] : '', posta: m ? m[2] : posta };
+}
+const connStr = c => `${opName[c[0]] || '?'} · ${TECH_SHORT[c[1]] || c[1] || '?'} · ${STATUS_SHORT[c[2]] || c[2] || '?'}${c[3] ? ' · ' + c[3] + ' Mb/s' : ''} (${c[4]} t.)`;
+const connTag = c => `<span class="tag s${STATUS[c[2]] ? c[2] : 0}">${esc(connStr(c))}</span>`;
+
+async function pool(items, n, fn){
+  let i = 0; const out = [];
+  await Promise.all(Array.from({length: Math.min(n, items.length)}, async () => { while (i < items.length) { const k = i++; out[k] = await fn(items[k], k); } }));
+  return out;
+}
+
+$('#runBtn').addEventListener('click', async () => {
+  const btn = $('#runBtn'); btn.disabled = true; $('#msg').innerHTML = '';
+  for (const b of ['#xlsxBtn','#csvBtn','#copyBtn']) $(b).disabled = true;
+  const t0 = performance.now();
+  const prog = p => $('#prog').style.width = Math.round(p*100) + '%';
+  try {
+    const c1 = getCond('c1'), c2on = $('#c2on').checked, c3on = $('#c3on').checked;
+    const t1 = makeTest(c1), t2 = c2on ? makeTest(getCond('c2')) : null, t3 = c3on ? makeTest(getCond('c3')) : null;
+    const obs = [...selected];
+
+    $('#status').textContent = 'Nalagam naslove …'; prog(0.02);
+    const keys = [...new Set(obs.map(shardKeyFor).filter(Boolean))];
+    await pool(keys, 6, k => shard(k));
+    const recs = [];
+    for (const ob of obs) {
+      const k = shardKeyFor(ob); if (!k) continue;
+      for (const r of await shard(k)) if (r[3] === ob) recs.push(r);
+    }
+    prog(0.1);
+
+    const groups = [...new Set(recs.map(r => Math.floor((r[0]-1) / catalog.groupSize)))];
+    let done = 0;
+    $('#status').textContent = `Nalagam priključke (0 / ${groups.length}) …`;
+    await pool(groups, 8, async g => { await group(g); done++; prog(0.1 + 0.85 * done / groups.length); $('#status').textContent = `Nalagam priključke (${done} / ${groups.length}) …`; });
+
+    const rows = []; const perOb = {};
+    for (const ob of obs) perOb[ob] = {naslovi:0, zadetki:0, tocke:0};
+    for (const r of recs) {
+      const [id, naslov, naselje, obcina, hs] = r;
+      perOb[obcina].naslovi++;
+      const g = await group(Math.floor((id-1) / catalog.groupSize));
+      const conns = g[id] || [];
+      const match = conns.filter(t1);
+      if (!match.length) continue;
+      if (t2 && !conns.some(t2)) continue;
+      if (t3 && conns.some(t3)) continue;
+      const pts = match.reduce((a,c) => a + (c[4] || 0), 0);
+      perOb[obcina].zadetki++; perOb[obcina].tocke += pts;
+      rows.push({id, naslov, naselje, obcina, hs, match, conns, pts, ...splitAddr(naslov)});
+    }
+    rows.sort((a,b) => a.obcina.localeCompare(b.obcina,'sl') || a.naselje.localeCompare(b.naselje,'sl') || a.naslov.localeCompare(b.naslov,'sl',{numeric:true}));
+    prog(1);
+
+    const ms = performance.now() - t0;
+    lastRows = rows;
+    lastMeta = {
+      obcine: obs, perOb,
+      filtri: { glavni: condText('c1'), tudi: c2on ? condText('c2') : '—', izloci: c3on ? condText('c3') : '—' },
+      snapshot: catalog.snapshot, ts: new Date()
+    };
+    $('#stAll').textContent = fmt(recs.length);
+    $('#stHit').textContent = fmt(rows.length);
+    $('#stPts').textContent = fmt(rows.reduce((a,r) => a + r.pts, 0));
+    $('#stTime').textContent = (ms/1000).toFixed(1) + ' s';
+    $('#status').textContent = rows.length ? `Najdenih ${fmt(rows.length)} naslovov.` : 'Ni naslovov, ki ustrezajo filtrom.';
+
+    for (const r of rows) { const c = tisCacheGet(r.id); if (c) r.tis = c; }
+    renderTable();
+    updateTisStats();
+    $('#tisBtn').disabled = !rows.length; $('#tisBtn').textContent = 'Poišči v TIS';
+    $('#tisStatus').textContent = rows.length ? `${fmt(rows.filter(r => !r.tis).length)} naslovov čaka na TIS preverjanje.` : 'Ni naslovov za TIS.';
+    for (const b of ['#xlsxBtn','#csvBtn','#copyBtn']) $(b).disabled = !rows.length;
+  } catch (e) {
+    $('#msg').innerHTML = `<div class="msg err">${esc(e.message || e)}</div>`;
+    $('#status').textContent = 'Napaka.';
+  } finally {
+    btn.disabled = !selected.size;
+  }
+});
+
+// --- tabela ---
+function leadsOf(r){
+  if (!r.tis) return [];
+  const firm = $('#optFirm').checked, noPhone = $('#optNoPhone').checked, ban = $('#optBan').checked;
+  const out = [];
+  for (const e of r.tis.entries) {
+    if (e.type === 'podjetje' && !firm) continue;
+    const ok = e.numbers.filter(n => !(ban && n.neKlici));
+    if (!ok.length && !(noPhone && !e.numbers.length)) continue;
+    out.push({ ...e, ok });
+  }
+  return out;
+}
+function tisCell(r){
+  if (!r.tis) return '<span class="muted">–</span>';
+  if (r.tis.error) return `<span class="tag s0">napaka: ${esc(r.tis.error)}</span>`;
+  if (!r.tis.entries.length) return '<span class="muted">ni vpisa v TIS</span>';
+  return r.tis.entries.map(e => {
+    const nums = e.numbers.map(n => n.nr + (n.neKlici ? ' ⛔' : '')).join(', ') || 'brez številke';
+    const allBan = e.numbers.length && e.numbers.every(n => n.neKlici);
+    return `<span class="lead ${allBan ? 'ban' : ''}"><b>${esc(e.name)}</b> <small>${e.type === 'podjetje' ? '(podjetje) ' : ''}${esc(nums)}</small></span>`;
+  }).join('') + (r.tis.morePages ? '<small class="muted">+ več strani v TIS</small>' : '');
+}
+function renderTable(){
+  const rows = lastRows, show = rows.slice(0, 400);
+  $('#tbody').innerHTML = show.map((r,i) => `<tr><td>${i+1}</td><td><b>${esc(r.ulica)}</b><br><span class="muted">${esc(r.postna + ' ' + r.posta)}${r.naselje !== r.posta ? ' · ' + esc(r.naselje) : ''}</span></td><td>${esc(r.obcina)}</td><td>${r.match.map(connTag).join('')}</td><td>${tisCell(r)}</td></tr>`).join('');
+  $('#tblWrap').hidden = !rows.length;
+  $('#tblNote').textContent = rows.length > 400 ? `Prikazanih prvih 400 od ${fmt(rows.length)}. Excel vsebuje vse.` : '';
+}
+
+// --- TIS ---
+const TIS_API = './api/tis';
+const TIS_TTL = 14 * 24 * 3600 * 1000;
+function tisCacheGet(id){
+  try { const v = JSON.parse(localStorage.getItem('tis:' + id) || 'null'); return v && Date.now() - v.at < TIS_TTL ? v.data : null; } catch { return null; }
+}
+function tisCacheSet(id, data){
+  try { localStorage.setItem('tis:' + id, JSON.stringify({ at: Date.now(), data })); } catch {}
+}
+function updateTisStats(){
+  const rows = lastRows, done = rows.filter(r => r.tis);
+  let leads = 0, banned = 0, addr = 0;
+  const banOn = $('#optBan').checked;
+  for (const r of done) {
+    const l = leadsOf(r);
+    if (l.length) addr++;
+    leads += l.filter(e => e.ok.length).length;
+    if (banOn) for (const e of r.tis.entries) banned += e.numbers.filter(n => n.neKlici).length;
+  }
+  $('#tsDone').textContent = `${fmt(done.length)} / ${fmt(rows.length)}`;
+  $('#tsAddr').textContent = fmt(addr);
+  $('#tsLeads').textContent = fmt(leads);
+  $('#tsBan').textContent = banOn ? fmt(banned) : 'vključeni';
+  $('#tisProg').style.width = rows.length ? Math.round(done.length / rows.length * 100) + '%' : '0';
+}
+for (const id of ['#optBan','#optFirm','#optNoPhone']) $(id).addEventListener('change', () => { updateTisStats(); renderTable(); });
+
+let tisRunning = false, tisPaused = false;
+$('#tisPause').addEventListener('click', () => {
+  tisPaused = !tisPaused;
+  $('#tisPause').textContent = tisPaused ? 'Nadaljuj' : 'Pavza';
+  if (!tisPaused && !tisRunning) runTis();
+});
+$('#tisBtn').addEventListener('click', () => { tisPaused = false; $('#tisPause').textContent = 'Pavza'; runTis(); });
+
+async function runTis(){
+  if (tisRunning) return;
+  tisRunning = true;
+  $('#tisBtn').disabled = true; $('#tisPause').hidden = false;
+  const rows = lastRows;
+  const todo = rows.filter(r => !r.tis || r.tis.error);
+  const BATCH = 6, PAR = 2;
+  const batches = [];
+  for (let i = 0; i < todo.length; i += BATCH) batches.push(todo.slice(i, i + BATCH));
+  let failures = 0, lastRender = 0;
+  const t0 = performance.now();
+  let doneB = 0;
+  try {
+    await pool(batches, PAR, async batch => {
+      if (tisPaused || failures >= 5 || rows !== lastRows) return;
+      const body = { addresses: batch.map(r => ({ key: String(r.id), street: r.ulica, city: r.posta || r.naselje })) };
+      let data;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const res = await fetch(TIS_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+          if (!res.ok) throw new Error('API ' + res.status);
+          data = await res.json(); break;
+        } catch (e) {
+          if (attempt === 2) { failures++; data = null; $('#tisStatus').textContent = 'TIS klic ni uspel: ' + (e.message || e); }
+          else await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
+        }
+      }
+      if (!data) return;
+      for (const r of batch) {
+        const t = data.results[String(r.id)];
+        if (!t) continue;
+        r.tis = t;
+        if (!t.error) tisCacheSet(r.id, t);
+      }
+      doneB++;
+      const left = todo.length - Math.min(todo.length, doneB * BATCH);
+      const rate = (performance.now() - t0) / (doneB * BATCH);
+      $('#tisStatus').textContent = `Preverjam TIS … še ${fmt(left)} naslovov (~${Math.ceil(left * rate / 60000)} min)`;
+      updateTisStats();
+      if (performance.now() - lastRender > 1500) { renderTable(); lastRender = performance.now(); }
+    });
+  } finally {
+    tisRunning = false;
+    renderTable(); updateTisStats();
+    const left = rows.filter(r => !r.tis || r.tis.error).length;
+    $('#tisBtn').disabled = !left;
+    $('#tisBtn').textContent = left ? 'Nadaljuj TIS' : 'TIS končan ✓';
+    $('#tisPause').hidden = !tisPaused || !left;
+    if (failures >= 5) $('#tisStatus').textContent = 'TIS se je ustavil zaradi napak. Počakaj minuto in klikni Nadaljuj TIS.';
+    else if (tisPaused) $('#tisStatus').textContent = `Pavza. Preostalo ${fmt(left)} naslovov.`;
+    else if (!left) $('#tisStatus').textContent = 'TIS končan. Prenesi Excel.';
+  }
+}
+
+// --- export ---
+function addrCols(r){
+  return {
+    'Naslov': r.naslov, 'Ulica in hišna št.': r.ulica, 'Poštna št.': r.postna, 'Pošta': r.posta,
+    'Naselje': r.naselje, 'Občina': r.obcina,
+    'Ujemajoči priključki': r.match.map(connStr).join(' | '),
+    'T-2 status': summarizeOp(r.conns, 'T-2'),
+    'Telekom status': summarizeOp(r.conns, 'Telekom Slovenije'),
+    'Telemach status': summarizeOp(r.conns, 'Telemach'),
+    'A1 status': summarizeOp(r.conns, 'A1 Slovenija'),
+  };
+}
+function leadRows(){
+  const out = [];
+  for (const r of lastRows) for (const e of leadsOf(r)) {
+    const nums = e.ok.map(n => n.nr);
+    out.push({
+      'Ime / naziv': e.name,
+      'Tip': e.type,
+      'Telefon': nums[0] || '',
+      'Dodatne številke': nums.slice(1).join(', '),
+      'Številke s prepovedjo klicev': e.numbers.filter(n => n.neKlici).map(n => n.nr).join(', '),
+      ...addrCols(r),
+      'TIS povezava': e.link,
+      'Status klica': '', 'Opomba': ''
+    });
+  }
+  return out;
+}
+function addressRows(){
+  return lastRows.map(r => {
+    const l = leadsOf(r);
+    return {
+      ...addrCols(r),
+      'TIS preverjeno': r.tis ? (r.tis.error ? 'napaka' : 'da') : 'ne',
+      'TIS kontaktov': l.length,
+      'TIS imena': l.map(e => e.name).join(' | '),
+      'TIS telefoni': l.flatMap(e => e.ok.map(n => n.nr)).join(', '),
+      'Vsi priključki na naslovu': r.conns.map(connStr).join(' | '),
+      'GURS ID': r.id
+    };
+  });
+}
+function summarizeOp(conns, name){
+  return [...new Set(conns.filter(c => opName[c[0]] === name).map(c => `${TECH_SHORT[c[1]] || c[1]} ${STATUS_SHORT[c[2]] || c[2]}`))].join(', ');
+}
+function fileBase(){
+  const ob = lastMeta.obcine.length === 1 ? lastMeta.obcine[0] : lastMeta.obcine.length + '-obcin';
+  return 'LEADI_' + normalize(ob).replaceAll(' ','-') + '_' + lastMeta.ts.toISOString().slice(0,10);
+}
+function download(blob, name){
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function sheet(rows, widths){
+  const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{'Ni podatkov': ''}]);
+  if (widths) ws['!cols'] = widths.map(w => ({wch:w}));
+  if (rows.length) ws['!autofilter'] = { ref: ws['!ref'] };
+  return ws;
+}
+$('#xlsxBtn').addEventListener('click', () => {
+  if (!window.XLSX) { $('#msg').innerHTML = '<div class="msg err">Excel knjižnica se ni naložila. Uporabi CSV.</div>'; return; }
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sheet(leadRows(), [30,9,14,20,20,36,28,8,14,16,14,40,18,18,18,18,40,16,30]), 'Leadi');
+  XLSX.utils.book_append_sheet(wb, sheet(addressRows(), [36,28,8,14,16,14,40,18,18,18,18,12,10,50,30,70,10]), 'Naslovi');
+  const sum = Object.entries(lastMeta.perOb).map(([o,v]) => {
+    const rs = lastRows.filter(r => r.obcina === o);
+    return {'Občina':o,'Pregledanih naslovov':v.naslovi,'Zadetkov GURS':v.zadetki,'Ujemajočih točk':v.tocke,
+      'TIS preverjeno': rs.filter(r => r.tis).length, 'Leadov s telefonom': rs.reduce((a,r) => a + leadsOf(r).filter(e => e.ok.length).length, 0)};
+  });
+  XLSX.utils.book_append_sheet(wb, sheet(sum, [28,20,14,16,14,18]), 'Povzetek');
+  const ws3 = XLSX.utils.aoa_to_sheet([
+    ['Glavni pogoj', lastMeta.filtri.glavni], ['Isti naslov ima tudi', lastMeta.filtri.tudi], ['Izloči, če ima', lastMeta.filtri.izloci],
+    ['Občine', lastMeta.obcine.join(', ')], ['Stanje podatkov GURS', lastMeta.snapshot], ['Izvoženo', new Date().toLocaleString('sl-SI')],
+    ['Številke s prepovedjo klicev', $('#optBan').checked ? 'izločene iz stolpca Telefon' : 'VKLJUČENE (preveri pred klicem)'],
+    ['Opomba', 'GURS status velja na nivoju naslova, ne stanovanja. TIS vsebuje samo naročnike, ki so vpisani v imenik.']
+  ]); ws3['!cols'] = [{wch:28},{wch:90}];
+  XLSX.utils.book_append_sheet(wb, ws3, 'Filtri');
+  XLSX.writeFile(wb, fileBase() + '.xlsx');
+});
+$('#csvBtn').addEventListener('click', () => {
+  const rows = lastRows.some(r => r.tis) ? leadRows() : addressRows();
+  if (!rows.length) { $('#msg').innerHTML = '<div class="msg info">Ni leadov za izvoz.</div>'; return; }
+  const head = Object.keys(rows[0]);
+  const q = v => { const s = String(v ?? ''); return /[;"\n]/.test(s) ? '"' + s.replaceAll('"','""') + '"' : s; };
+  const csv = '﻿' + [head.join(';'), ...rows.map(r => head.map(h => q(r[h])).join(';'))].join('\r\n');
+  download(new Blob([csv], {type:'text/csv;charset=utf-8'}), fileBase() + '.csv');
+});
+$('#copyBtn').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(lastRows.map(r => r.naslov).join('\n')); $('#copyBtn').textContent = 'Kopirano ✓'; }
+  catch { $('#copyBtn').textContent = 'Kopiranje ni uspelo'; }
+  setTimeout(() => $('#copyBtn').textContent = 'Kopiraj naslove', 1800);
+});
+
+// --- init ---
+const OBCINE = [["Ajdovščina",6052],["Ankaran",717],["Apače",1357],["Beltinci",2752],["Benedikt",812],["Bistrica ob Sotli",445],["Bled",2593],["Bloke",741],["Bohinj",2047],["Borovnica",1072],["Bovec",1204],["Braslovče",2007],["Brda",2226],["Brezovica",3814],["Brežice",8640],["Cankova",732],["Celje",9156],["Cerklje na Gorenjskem",2307],["Cerknica",3536],["Cerkno",1336],["Cerkvenjak",771],["Cirkulane",1038],["Črenšovci",1408],["Črna na Koroškem",668],["Črnomelj",4746],["Destrnik",997],["Divača",1314],["Dobje",363],["Dobrepolje",1365],["Dobrna",677],["Dobrova-Polhov Gradec",2229],["Dobrovnik",630],["Dol pri Ljubljani",1678],["Dolenjske Toplice",1328],["Domžale",8067],["Dornava",928],["Dravograd",2315],["Duplek",2299],["Gorenja vas-Poljane",2115],["Gorišnica",1319],["Gorje",936],["Gornja Radgona",2768],["Gornji Grad",754],["Gornji Petrovci",997],["Grad",854],["Grosuplje",5368],["Hajdina",1359],["Hoče-Slivnica",3745],["Hodoš",141],["Horjul",866],["Hrastnik",1723],["Hrpelje-Kozina",1897],["Idrija",2797],["Ig",2449],["Ilirska Bistrica",4575],["Ivančna Gorica",5792],["Izola",3259],["Jesenice",2934],["Jezersko",233],["Juršinci",854],["Kamnik",6374],["Kanal",2095],["Kidričevo",1957],["Kobarid",1761],["Kobilje",235],["Kočevje",3930],["Komen",1676],["Komenda",1727],["Koper",13283],["Kostanjevica na Krki",942],["Kostel",497],["Kozje",1157],["Kranj",10821],["Kranjska Gora",2074],["Križevci",1154],["Krško",7026],["Kungota",1759],["Kuzma",620],["Laško",3856],["Lenart",2472],["Lendava",3981],["Litija",4225],["Ljubljana",41372],["Ljubno",786],["Ljutomer",3810],["Log-Dragomer",1096],["Logatec",3484],["Loška dolina",1192],["Loški Potok",729],["Lovrenc na Pohorju",874],["Luče",425],["Lukovica",1695],["Majšperk",1486],["Makole",892],["Maribor",19387],["Markovci",1307],["Medvode",4513],["Mengeš",1869],["Metlika",2707],["Mežica",703],["Miklavž na Dravskem polju",2216],["Miren-Kostanjevica",1772],["Mirna",839],["Mirna Peč",967],["Mislinja",1352],["Mokronog-Trebelno",1104],["Moravče",1628],["Moravske Toplice",2991],["Mozirje",1305],["Murska Sobota",5127],["Muta",895],["Naklo",1546],["Nazarje",707],["Nova Gorica",7970],["Novo mesto",9644],["Odranci",480],["Oplotnica",1141],["Ormož",4435],["Osilnica",168],["Pesnica",2562],["Piran",4693],["Pivka",1885],["Podčetrtek",1373],["Podlehnik",753],["Podvelka",633],["Poljčane",1495],["Polzela",1997],["Postojna",3247],["Prebold",1345],["Preddvor",1160],["Prevalje",1476],["Ptuj",6298],["Puconci",2410],["Rače-Fram",2714],["Radeče",1352],["Radenci",1930],["Radlje ob Dravi",1587],["Radovljica",4789],["Ravne na Koroškem",1892],["Razkrižje",424],["Rečica ob Savinji",699],["Renče-Vogrsko",1456],["Ribnica",2694],["Ribnica na Pohorju",390],["Rogaška Slatina",3255],["Rogašovci",1143],["Rogatec",905],["Ruše",1683],["Selnica ob Dravi",1211],["Semič",1422],["Sevnica",5204],["Sežana",4192],["Slovenj Gradec",4210],["Slovenska Bistrica",7978],["Slovenske Konjice",3938],["Sodražica",872],["Solčava",174],["Središče ob Dravi",726],["Starše",1388],["Straža",1262],["Sveta Ana",740],["Sveta Trojica v Slovenskih goricah",793],["Sveti Andraž v Slov. goricah",409],["Sveti Jurij ob Ščavnici",1213],["Sveti Jurij v Slovenskih goricah",734],["Sveti Tomaž",822],["Šalovci",750],["Šempeter-Vrtojba",1824],["Šenčur",2484],["Šentilj",2658],["Šentjernej",2508],["Šentjur",6347],["Šentrupert",929],["Škocjan",1241],["Škofja Loka",4929],["Škofljica",2986],["Šmarje pri Jelšah",3741],["Šmarješke Toplice",1362],["Šmartno ob Paki",1094],["Šmartno pri Litiji",1752],["Šoštanj",2089],["Štore",971],["Tabor",567],["Tišina",1340],["Tolmin",3732],["Trbovlje",2608],["Trebnje",3917],["Trnovska vas",481],["Trzin",1189],["Tržič",3211],["Turnišče",1040],["Velenje",4913],["Velika Polana",497],["Velike Lašče",1676],["Veržej",486],["Videm",2114],["Vipava",1811],["Vitanje",675],["Vodice",1476],["Vojnik",2958],["Vransko",826],["Vrhnika",4341],["Vuzenica",755],["Zagorje ob Savi",3758],["Zavrč",651],["Zreče",1779],["Žalec",6078],["Železniki",1632],["Žetale",532],["Žiri",1325],["Žirovnica",1334],["Žužemberk",1605]];
+
+(async function init(){
+  obcine = OBCINE; renderObList(); renderChips();
+  try {
+    // Če je stran gostovana skupaj z GURS podatki (./data/), beri lokalno.
+    try { const r = await fetch('./data/index.json', {cache:'no-store'}); if (r.ok && (r.headers.get('content-type')||'').includes('json')) BASE = new URL('./data/', location.href).href; } catch {}
+    [catalog, operators] = await Promise.all([readJSON('index.json'), readJSON('operators.json')]);
+    for (const [id,[n]] of Object.entries(operators)) opName[id] = n;
+    for (const id of ['c1','c2','c3']) {
+      const [op, tech, st] = document.querySelectorAll('#'+id+' select');
+      op.innerHTML = opOptions(); tech.innerHTML = techOptions(); st.innerHTML = stOptions();
+      setCond(id, DEFAULTS[id]);
+    }
+    $('#snapPill').textContent = 'Stanje GURS: ' + new Date(catalog.snapshot).toLocaleDateString('sl-SI');
+    $('#addrPill').textContent = fmt(catalog.addresses) + ' naslovov · ' + fmt(catalog.points) + ' točk';
+    renderChips();
+  } catch (e) {
+    $('#snapPill').textContent = 'Podatki niso dosegljivi';
+    $('#msg').innerHTML = `<div class="msg err">${esc(e.message)}</div>`;
+  }
+})();
+</script>
+</body>
+</html>
